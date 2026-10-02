@@ -7,7 +7,6 @@ import { actorOf, slot } from "./text.ts";
  */
 export function localClef(unit: Unit): { model: string; answers: Record<string, unknown> } {
   const text = unit.text.trim();
-  const section = unit.section_path;
   const kind = kindOf(unit);
   const polarity = polarityOf(text);
   const status = theoryStatus(text, kind);

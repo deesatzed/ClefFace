@@ -74,5 +74,6 @@ describe("experiment core", () => {
     assert.equal(cases.length, 12);
     assert.equal(cases.filter((item) => item.category === "evidence_removal").length, 4);
     assert.ok(cases.every((item) => item.validation === "validated"));
+    assert.ok(cases.every((item) => item.split === "development"));
   });
 });

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { createReplayArtifact, parseReplayArtifact } from "./artifacts.ts";
+import { createReplayArtifact, parseArtifactText, parseReplayArtifact, serializeCasesJsonl } from "./artifacts.ts";
 import { featuredSeed } from "./fixtures.ts";
 import { simulatedResponses } from "./providers.ts";
 
@@ -20,5 +20,13 @@ describe("portable replay artifacts", () => {
   it("rejects malformed and schema-incompatible imports", () => {
     assert.deepEqual(parseReplayArtifact("{").errors, ["Expected property name or '}' in JSON at position 1 (line 1 column 2)"]);
     assert.deepEqual(parseReplayArtifact(JSON.stringify({ kind: "other", schemaVersion: "x" })).errors, ["unsupported artifact kind"]);
+  });
+
+  it("round trips individual cases through JSONL", () => {
+    const artifact = createReplayArtifact(seed.experiment, seed.cases, responses, "2026-10-02T00:00:00.000Z");
+    const parsed = parseArtifactText(serializeCasesJsonl(artifact));
+    assert.deepEqual(parsed.errors, []);
+    assert.equal(parsed.artifact?.cases.length, 3);
+    assert.equal(parsed.artifact?.responses.length, 6);
   });
 });

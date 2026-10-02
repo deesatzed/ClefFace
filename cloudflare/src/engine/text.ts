@@ -33,7 +33,7 @@ export function shortQuote(text: string): string {
 export function splitSentences(paragraph: string): string[] {
   let marked = paragraph.replace(ABBR, (match) => match.replace(/\./g, "∯"));
   marked = marked.replace(/(\d)\.(\d)/g, "$1∯$2");
-  const parts = marked.split(/(?<=[.!?])\s+(?=[A-Z0-9“"(\[])/);
+  const parts = marked.split(/(?<=[.!?])\s+(?=[A-Z0-9“"([])/);
   const out: string[] = [];
   for (const part of parts) {
     const restored = part.replace(/∯/g, ".").trim();

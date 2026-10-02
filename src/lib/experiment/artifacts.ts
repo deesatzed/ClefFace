@@ -10,6 +10,7 @@ import {
 import type { ModelResponse } from "./providers.ts";
 
 export const ARTIFACT_KIND = "evidence-lab/replay";
+export const CASE_JSONL_KIND = "evidence-lab/case";
 
 export interface ReplayArtifact {
   kind: typeof ARTIFACT_KIND;
@@ -55,6 +56,7 @@ export function parseReplayArtifact(json: string): ImportResult {
       source: isRecord(raw.experiment.source) ? stringValue(raw.experiment.source.original) : "",
       question: stringValue(raw.experiment.question),
       answers: stringArray(raw.experiment.answers),
+      createdAt: stringValue(raw.experiment.createdAt),
     });
     const cases = raw.cases.map((value, index) => rebuildCase(experiment, value, index));
     const responses = raw.responses.map((value, index) => rebuildResponse(value, index));
@@ -63,6 +65,52 @@ export function parseReplayArtifact(json: string): ImportResult {
   } catch (error) {
     return { errors: [error instanceof Error ? error.message : "invalid artifact"] };
   }
+}
+
+/** One self-sufficient record per case for line-oriented tools and review. */
+export function serializeCasesJsonl(artifact: ReplayArtifact): string {
+  return artifact.cases.map((item) => JSON.stringify({
+    kind: CASE_JSONL_KIND,
+    schemaVersion: EXPERIMENT_SCHEMA_VERSION,
+    exportedAt: artifact.exportedAt,
+    experiment: artifact.experiment,
+    case: item,
+    responses: artifact.responses.filter((response) => response.caseId === item.id),
+  })).join("\n");
+}
+
+export function parseCasesJsonl(text: string): ImportResult {
+  try {
+    const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    if (!lines.length) return { errors: ["JSONL contains no records"] };
+    const records = lines.map((line, index) => {
+      const record: unknown = JSON.parse(line);
+      if (!isRecord(record) || record.kind !== CASE_JSONL_KIND || record.schemaVersion !== EXPERIMENT_SCHEMA_VERSION || !isRecord(record.experiment) || !isRecord(record.case) || !Array.isArray(record.responses)) {
+        throw new Error(`line ${index + 1} is not an evidence-lab case record`);
+      }
+      return record;
+    });
+    const first = records[0]!;
+    const experiment = JSON.stringify(first.experiment);
+    if (records.some((record) => JSON.stringify(record.experiment) !== experiment)) return { errors: ["JSONL records contain more than one experiment"] };
+    const cases = records.map((record) => record.case);
+    const responses = records.flatMap((record) => record.responses);
+    return parseReplayArtifact(JSON.stringify({ kind: ARTIFACT_KIND, schemaVersion: EXPERIMENT_SCHEMA_VERSION, exportedAt: first.exportedAt, experiment: first.experiment, cases, responses }));
+  } catch (error) {
+    return { errors: [error instanceof Error ? error.message : "invalid JSONL"] };
+  }
+}
+
+export function parseArtifactText(text: string): ImportResult {
+  const trimmed = text.trim();
+  if (!trimmed) return { errors: ["artifact is empty"] };
+  if (trimmed.includes("\n")) {
+    try {
+      const first: unknown = JSON.parse(trimmed.split(/\r?\n/).find((line) => line.trim()) ?? "");
+      if (isRecord(first) && first.kind === CASE_JSONL_KIND) return parseCasesJsonl(trimmed);
+    } catch { /* parseReplayArtifact supplies the actionable JSON error */ }
+  }
+  return parseReplayArtifact(trimmed);
 }
 
 function rebuildCase(experiment: Experiment, value: unknown, index: number): ExperimentCase {
@@ -75,9 +123,11 @@ function rebuildCase(experiment: Experiment, value: unknown, index: number): Exp
   if (category !== "meaning_change" && category !== "meaning_preserving" && category !== "evidence_removal") throw new Error(`case ${index} has an invalid category`);
   const validation = value.validation;
   if (validation !== "validated" && validation !== "exploratory" && validation !== "rejected") throw new Error(`case ${index} has an invalid validation status`);
+  const split = value.split;
+  if (split !== undefined && split !== "development" && split !== "protected") throw new Error(`case ${index} has an invalid split`);
   return createCase(experiment, {
     id: stringValue(value.id), category, patch, expectedBaseline: stringValue(value.expectedBaseline),
-    expectedVariant: stringValue(value.expectedVariant), rationale: stringValue(value.rationale), validation,
+    expectedVariant: stringValue(value.expectedVariant), rationale: stringValue(value.rationale), validation, ...(split ? { split } : {}),
   });
 }
 

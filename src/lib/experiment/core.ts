@@ -2,6 +2,7 @@ export const EXPERIMENT_SCHEMA_VERSION = "evidence-lab/v1";
 
 export type InterventionCategory = "meaning_change" | "meaning_preserving" | "evidence_removal";
 export type ValidationStatus = "validated" | "exploratory" | "rejected";
+export type CaseSplit = "development" | "protected";
 
 export interface SourceVersion {
   id: string;
@@ -32,6 +33,8 @@ export interface CreateExperimentInput {
   source: string;
   question: string;
   answers: readonly string[];
+  /** ISO-8601 UTC timestamp; fixtures may supply a fixed value for replay. */
+  createdAt?: string;
 }
 
 export interface ExperimentCase {
@@ -43,6 +46,7 @@ export interface ExperimentCase {
   expectedVariant: string;
   rationale: string;
   validation: ValidationStatus;
+  split: CaseSplit;
   variant: SourceVersion;
 }
 
@@ -54,6 +58,7 @@ export interface CreateCaseInput {
   expectedVariant: string;
   rationale: string;
   validation?: ValidationStatus;
+  split?: CaseSplit;
 }
 
 export interface CaseValidation {
@@ -89,8 +94,13 @@ export function createExperiment(input: CreateExperimentInput): Experiment {
     source,
     question,
     answers,
-    createdAt: new Date(0).toISOString(),
+    createdAt: validIso(input.createdAt) ?? new Date().toISOString(),
   };
+}
+
+function validIso(value: string | undefined): string | null {
+  if (!value || Number.isNaN(Date.parse(value))) return null;
+  return new Date(value).toISOString();
 }
 
 export function applyPatch(source: string, patch: TextPatch): string {
@@ -113,6 +123,7 @@ export function createCase(experiment: Experiment, input: CreateCaseInput): Expe
     expectedVariant: input.expectedVariant.trim(),
     rationale: input.rationale.trim(),
     validation: input.validation ?? "validated",
+    split: input.split ?? "development",
     variant,
   };
   const validation = validateCase(experiment, item);
@@ -127,6 +138,7 @@ export function validateCase(experiment: Experiment, item: ExperimentCase): Case
   if (!experiment.answers.includes(item.expectedBaseline)) errors.push("baseline answer is outside answer schema");
   if (!experiment.answers.includes(item.expectedVariant)) errors.push("variant answer is outside answer schema");
   if (!item.rationale) errors.push("case rationale is required");
+  if (item.split !== "development" && item.split !== "protected") errors.push("case split is invalid");
   if (item.validation === "validated" && item.category === "meaning_change" && item.expectedBaseline === item.expectedVariant) {
     errors.push("meaning change requires a changed expected answer");
   }
