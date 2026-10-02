@@ -1,4 +1,3 @@
-import { CONFIDENCE_THRESHOLD } from "./text.ts";
 import type {
   ConceptType,
   NormalizedDecision,
@@ -38,25 +37,28 @@ export function normalizeAnswers(
   const timeScope = readChoice(answers.time_scope, TIME, "unspecified");
   const conceptType = readChoice(answers.concept_type, CONCEPT, "not_applicable");
 
-  const scores = [kind.confidence, boilerplate.confidence];
-  if (kind.value === "fact" || kind.value === "theory") {
-    scores.push(polarity.confidence, deterministic.confidence, timeScope.confidence, quantity.confidence);
-  }
-  if (kind.value === "theory") {
-    scores.push(status.confidence, causal.confidence, falsifiable.confidence);
-  }
-  if (kind.value === "workflow_step") {
-    scores.push(decision.confidence, full.confidence);
-  }
-  if (kind.value === "concept") {
-    scores.push(defined.confidence, conceptType.confidence);
-  }
-  if (external.yes === "yes") scores.push(external.confidence);
+  const question_scores = {
+    boilerplate: boilerplate.confidence,
+    deterministic: deterministic.confidence,
+    quantity_present: quantity.confidence,
+    definition_present: defined.confidence,
+    decision_point: decision.confidence,
+    fully_specified: full.confidence,
+    external_check: external.confidence,
+    polarity: polarity.confidence,
+    record_kind: kind.confidence,
+    theory_status: status.confidence,
+    causal: causal.confidence,
+    falsifiable: falsifiable.confidence,
+    time_scope: timeScope.confidence,
+    concept_type: conceptType.confidence,
+  };
+  // The keep score is the category and the reading. A citation, a time scope,
+  // or a number question stays on the record and does not pull this down.
+  const confidence =
+    kind.value === "none" ? kind.confidence : Math.min(kind.confidence, polarity.confidence);
 
-  const conflict =
-    kind.conflict ||
-    polarity.conflict ||
-    (kind.value === "theory" && (status.conflict || causal.conflict || falsifiable.conflict));
+  const conflict = kind.conflict || polarity.conflict;
 
   return {
     unit_id: unitId,
@@ -74,35 +76,31 @@ export function normalizeAnswers(
     time_scope: timeScope.value as TimeScope,
     concept_type: conceptType.value as ConceptType | "not_applicable",
     external_check: external.yes,
-    confidence: Math.min(...scores),
+    confidence,
+    question_scores,
     conflict,
     model: raw.model ?? "unknown",
   };
 }
 
-export function reviewReasons(decision: NormalizedDecision, human: boolean): ReviewReason[] {
+export function reviewReasons(decision: NormalizedDecision, human: boolean, text = ""): ReviewReason[] {
   if (decision.boilerplate === "yes") return [];
   const reasons = new Set<ReviewReason>();
-  if (!human && decision.confidence < CONFIDENCE_THRESHOLD) reasons.add("low_confidence");
   if (!human && decision.conflict) reasons.add("conflict");
-  if (!human && decision.external_check === "yes") reasons.add("external_check_required");
   if (decision.record_kind === "none") reasons.add("unclear");
-  if (
-    (decision.record_kind === "fact" || decision.record_kind === "theory") &&
-    decision.polarity === "unclear"
-  ) {
-    reasons.add("unclear");
-  }
-  if (
-    !human &&
-    decision.record_kind === "theory" &&
-    (decision.causal === "unclear" ||
-      decision.falsifiable === "unclear" ||
-      decision.theory_status === "not_applicable")
-  ) {
-    reasons.add("unclear");
+  if (decision.record_kind !== "none" && decision.polarity === "unclear") reasons.add("unclear");
+  // "Poorly active" and "mostly negative" state the claim. They are not a no.
+  // A says-no reading waits unless the sentence itself says no.
+  if (!human && decision.polarity === "denied" && text && !statesDenial(text)) {
+    reasons.add("unsupported_denial");
   }
   return [...reasons];
+}
+
+export function statesDenial(text: string): boolean {
+  return /\b(no|not|never|cannot|can't|doesn't|does not|do not|don't|isn't|aren't|wasn't|weren't|won't|must not|shall not)\b/i.test(
+    text,
+  );
 }
 
 function readNoul(value: unknown): { yes: YesNo; confidence: number } {

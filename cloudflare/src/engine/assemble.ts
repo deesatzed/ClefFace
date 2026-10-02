@@ -116,7 +116,7 @@ export function extractDocument(
 
   for (const unit of units) {
     const decision = tuned[unit.ordinal - 1];
-    const reasons = reviewReasons(decision, decision.human);
+    const reasons = reviewReasons(decision, decision.human, unit.text);
     if (decision.boilerplate === "yes") {
       boilerplate.add(unit.id);
       continue;
@@ -174,7 +174,7 @@ export function extractDocument(
         falsifiable: decision.falsifiable,
         conflicts_with_fact_id: "none",
         unit_ids: [unit.id],
-        held: held || decision.theory_status === "not_applicable",
+        held,
       });
       continue;
     }
@@ -307,7 +307,7 @@ function buildWorkflows(
     next = take(next, registry, documentId, [workflowId]);
     const stepRecs: StepRec[] = steps.map((unit, index) => {
       const decision = tuned[unit.ordinal - 1];
-      const held = reviewReasons(decision, decision.human).length > 0;
+      const held = reviewReasons(decision, decision.human, unit.text).length > 0;
       const lexicalDecision = /\b(if|whether|otherwise|decide|decision)\b/i.test(unit.text);
       let decisionFlag: YesNo = decision.decision_point;
       if (decisionFlag === "yes" && !lexicalDecision) {
@@ -336,7 +336,9 @@ function buildWorkflows(
       };
     });
     const exportedSteps = stepRecs.filter((step) => !step.held);
-    const triggerHeld = triggerUnit ? reviewReasons(tuned[triggerUnit.ordinal - 1], tuned[triggerUnit.ordinal - 1].human).length > 0 : true;
+    const triggerHeld = triggerUnit
+      ? reviewReasons(tuned[triggerUnit.ordinal - 1], tuned[triggerUnit.ordinal - 1].human, triggerUnit.text).length > 0
+      : true;
     const trigger = triggerUnit && !triggerHeld ? triggerUnit.text : "unspecified";
     const end = endCondition(group.map((unit) => unit.text));
     const roles = unique(exportedSteps.map((step) => step.actor));

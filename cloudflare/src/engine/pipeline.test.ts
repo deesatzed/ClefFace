@@ -34,7 +34,13 @@ describe("clef extract", () => {
         assert.equal(SAMPLE_DOCUMENT.includes(concept.definition_quote), true);
       }
     }
-    assert.equal(job.output.theories.length, 0);
+    assert.deepEqual(
+      job.output.theories.map((theory) => theory.claim),
+      [
+        "The night gap may delay antibiotics.",
+        "This reading is an interpretation of the log, not a controlled trial.",
+      ],
+    );
     const quotes = new Set(job.output.facts.map((fact) => fact.evidence_quote));
     for (const item of job.review) {
       assert.equal(quotes.has(item.quote), false);
@@ -91,7 +97,8 @@ describe("clef extract", () => {
   });
 
   it("holds unclear rows and closes the gate only after a human accepts them", () => {
-    assert.ok(job.review.length >= 2);
+    assert.equal(job.review.length, 1);
+    assert.equal(job.review[0]?.reasons.includes("conflict"), true);
     assert.equal(job.status, "needs_review");
     assert.equal(
       job.output.coverage.segments_classified + job.output.coverage.unassigned_quotes.length,

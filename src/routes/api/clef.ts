@@ -133,6 +133,7 @@ function sentenceEvent(decision: NormalizedDecision, quote: string, index: numbe
     polarity: decision.polarity,
     confidence: decision.confidence,
     boilerplate,
-    waiting: !boilerplate && reviewReasons(decision, false).length > 0,
+    cited: decision.external_check === "yes",
+    waiting: !boilerplate && reviewReasons(decision, false, quote).length > 0,
   };
 }

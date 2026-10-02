@@ -32,7 +32,8 @@ export type ReviewReason =
   | "unclear"
   | "conflict"
   | "rejected_label"
-  | "external_check_required";
+  | "external_check_required"
+  | "unsupported_denial";
 export type ResolutionAction = "accept" | "boilerplate" | "file_as_fact";
 
 export interface SwarmState {
@@ -164,7 +165,9 @@ export interface NormalizedDecision {
   time_scope: TimeScope;
   concept_type: ConceptType | "not_applicable";
   external_check: YesNo;
+  /** Minimum of the category score and the reading score. Side questions are in question_scores. */
   confidence: number;
+  question_scores: Record<string, number>;
   conflict: boolean;
   model: string;
 }

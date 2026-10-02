@@ -14,6 +14,7 @@ interface LiveRow {
   polarity: string;
   confidence: number;
   boilerplate: boolean;
+  cited: boolean;
   waiting: boolean;
 }
 
@@ -84,7 +85,8 @@ function ClefDesk() {
         <h1 className="mt-1 font-display text-3xl text-ink sm:text-4xl">Send a document to Clef</h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
           Paste text in the box. Press Send. Each sentence comes back as a fact, a theory, a concept, or a step.
-          A sentence the model is unsure about waits for a person.
+          The page keeps it when the model can name it and read it. The score shows how sure the model is.
+          A citation stays on the fact. A sentence waits when the model cannot tell, or when it says no and the sentence does not.
         </p>
       </header>
 
@@ -205,7 +207,7 @@ function ClefDesk() {
                 <Row
                   key={`${item.quote}-${index}`}
                   label={kindWords(item.kind)}
-                  detail={polarityWords(item.polarity)}
+                  detail={`${polarityWords(item.polarity)} · ${item.confidence.toFixed(2)}${item.cited ? " · cites a source" : ""}`}
                   quote={item.quote}
                 />
               ))}
@@ -224,6 +226,7 @@ function ClefDesk() {
                   <p className="text-sm leading-relaxed text-ink">{item.quote}</p>
                   <p className="mt-2 font-mono text-xs text-muted">
                     Guess: {kindWords(item.kind)} · {polarityWords(item.polarity)} · {item.confidence.toFixed(2)}
+                    {item.cited ? " · cites a source" : ""}
                   </p>
                 </li>
               ))}
@@ -268,6 +271,7 @@ function applyLine(
     polarity?: string;
     confidence?: number;
     boilerplate?: boolean;
+    cited?: boolean;
     waiting?: boolean;
     error?: string;
   };
@@ -289,6 +293,7 @@ function applyLine(
       polarity: event.polarity,
       confidence: event.confidence ?? 0,
       boilerplate: Boolean(event.boilerplate),
+      cited: Boolean(event.cited),
       waiting: Boolean(event.waiting),
     };
     setLive((current) => {
