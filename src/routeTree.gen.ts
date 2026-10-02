@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ClefRouteImport } from './routes/clef'
+import { Route as ApiClefRouteImport } from './routes/api/clef'
 import { Route as ApiExtractRouteImport } from './routes/api/extract'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as ApiJobsIdRouteImport } from './routes/api/jobs/$id'
@@ -17,6 +19,16 @@ import { Route as ApiJobsIdRouteImport } from './routes/api/jobs/$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClefRoute = ClefRouteImport.update({
+  id: '/clef',
+  path: '/clef',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiClefRoute = ApiClefRouteImport.update({
+  id: '/api/clef',
+  path: '/api/clef',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiExtractRoute = ApiExtractRouteImport.update({
@@ -37,12 +49,16 @@ const ApiJobsIdRoute = ApiJobsIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/clef': typeof ClefRoute
+  '/api/clef': typeof ApiClefRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/mcp': typeof ApiMcpRoute
   '/api/jobs/$id': typeof ApiJobsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/clef': typeof ClefRoute
+  '/api/clef': typeof ApiClefRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/mcp': typeof ApiMcpRoute
   '/api/jobs/$id': typeof ApiJobsIdRoute
@@ -50,20 +66,33 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/clef': typeof ClefRoute
+  '/api/clef': typeof ApiClefRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/mcp': typeof ApiMcpRoute
   '/api/jobs/$id': typeof ApiJobsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/extract' | '/api/mcp' | '/api/jobs/$id'
+  fullPaths:
+    '/' | '/clef' | '/api/clef' | '/api/extract' | '/api/mcp' | '/api/jobs/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/extract' | '/api/mcp' | '/api/jobs/$id'
-  id: '__root__' | '/' | '/api/extract' | '/api/mcp' | '/api/jobs/$id'
+  to:
+    '/' | '/clef' | '/api/clef' | '/api/extract' | '/api/mcp' | '/api/jobs/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/clef'
+    | '/api/clef'
+    | '/api/extract'
+    | '/api/mcp'
+    | '/api/jobs/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ClefRoute: typeof ClefRoute
+  ApiClefRoute: typeof ApiClefRoute
   ApiExtractRoute: typeof ApiExtractRoute
   ApiMcpRoute: typeof ApiMcpRoute
   ApiJobsIdRoute: typeof ApiJobsIdRoute
@@ -76,6 +105,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clef': {
+      id: '/clef'
+      path: '/clef'
+      fullPath: '/clef'
+      preLoaderRoute: typeof ClefRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/clef': {
+      id: '/api/clef'
+      path: '/api/clef'
+      fullPath: '/api/clef'
+      preLoaderRoute: typeof ApiClefRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/extract': {
@@ -104,6 +147,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ClefRoute: ClefRoute,
+  ApiClefRoute: ApiClefRoute,
   ApiExtractRoute: ApiExtractRoute,
   ApiMcpRoute: ApiMcpRoute,
   ApiJobsIdRoute: ApiJobsIdRoute,

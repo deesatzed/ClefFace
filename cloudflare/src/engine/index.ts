@@ -6,6 +6,7 @@ export { SAMPLE_DOCUMENT } from "./sample.ts";
 export type {
   ExtractionOutput,
   Job,
+  NormalizedDecision,
   Resolution,
   ReviewItem,
   SwarmState,

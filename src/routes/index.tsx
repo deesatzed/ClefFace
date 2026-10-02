@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Console } from "@/components/clef/console";
+import { EvidenceLabWorkspace } from "@/components/evidence-lab/workspace";
 
 export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
-  return <Console />;
+  return <EvidenceLabWorkspace />;
 }

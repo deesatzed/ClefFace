@@ -3,7 +3,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "Clef Extract";
+const APP_NAME = "Evidence Lab";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -13,7 +13,7 @@ export const Route = createRootRoute({
       { title: APP_NAME },
       {
         name: "description",
-        content: "Closed-field document extraction. Facts, theories, and workflows as binary labels, with a human gate.",
+        content: "Change evidence, inspect model behavior, and export replayable AI evaluation experiments.",
       },
       { name: "theme-color", content: "#145c4a" },
     ],

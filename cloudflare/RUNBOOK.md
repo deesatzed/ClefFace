@@ -1,5 +1,21 @@
 # Clef Extract — local runbook
 
+Local model, no Cloudflare account. From a machine with the ClefExtract virtualenv:
+
+```
+python cloudflare/scripts/serve-clef.py 8010
+```
+
+Open `http://127.0.0.1:8010/` for a status page. Decisions are `POST /v1/systemone`.
+
+Then, from `ClefFace/`:
+
+```
+CLEF_URL=http://127.0.0.1:8010 node --experimental-strip-types cloudflare/scripts/extract-real.ts
+```
+
+That classifies the built-in ward-callback sample with Clef-flash and writes `/tmp/clef-extract-real.json`. Set `CLEF_URL` the same way for the desk at `POST /api/extract`. Leave it unset and the desk keeps the rule stand-in. A second server at `CLEF_FULL_URL` is used only when flash is low-confidence, conflicting, or unclear. Port 8000 is not used; another local app already listens there.
+
 Deploy from the repository root's `cloudflare/` directory. The Worker bundles `src/engine`, which is the same compiler the preview desk runs. Do not copy this folder without `src/engine`.
 
 Assumptions pinned to compatibility date 2026-10-01: Workers AI `AI.run` third-argument `gateway.id`, Durable Object SQLite (`ctx.storage.sql`), and the Clef request (`model`, `state`, `questions` of type noul or choice). Clef has no separate boolean type; yes/no questions are noul. Confirm the segmenter model id `@cf/meta/llama-3.1-8b-instruct` against the current Workers AI catalog.
