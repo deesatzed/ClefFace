@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "clef-extract",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  // AI Gateway and Workers AI bindings are account-level. The gateway id is
+  // passed on each AI.run options bag (see src/gateway.ts). Confirm the
+  // options shape if Cloudflare changes it after this compatibility date.
+  "ai": {
+    "binding": "AI"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "clef_extract",
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "REGISTRY",
+        "class_name": "IdRegistry"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["IdRegistry"]
+    }
+  ]
+}
